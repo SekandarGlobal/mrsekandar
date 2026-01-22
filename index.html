@@ -3,14 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Voice AI Orb</title>
+    <title>Mister Sekandar | Official</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; overflow: hidden; }
-        #orb-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
-        #ui { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; pointer-events: none; color: white; }
-        .btn { pointer-events: auto; background: white; color: black; padding: 15px 40px; border-radius: 99px; font-weight: bold; cursor: pointer; text-transform: uppercase; letter-spacing: 2px; transition: transform 0.2s; }
-        .btn:active { transform: scale(0.95); }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; overflow: hidden; font-family: 'Inter', sans-serif; }
+        #orb-container { width: 100%; height: 100%; position: absolute; top: 0; left: 0; filter: saturate(1.2) brightness(1.1); }
+        #ui { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; pointer-events: none; color: white; text-align: center; }
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.03); 
+            backdrop-filter: blur(10px); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            padding: 2rem 3rem; 
+            border-radius: 24px; 
+            pointer-events: auto;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .glass-card:hover { background: rgba(255, 255, 255, 0.06); border: 1px solid rgba(255, 255, 255, 0.2); transform: translateY(-5px); }
+        .status-dot { width: 8px; height: 8px; background: #a855f7; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 15px #a855f7; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
@@ -18,59 +29,61 @@
     <div id="orb-container"></div>
 
     <div id="ui">
-        <button id="talk-btn" class="btn">Talk</button>
-        <p id="status" class="mt-4 opacity-50 uppercase text-xs tracking-widest">Awaiting AI</p>
+        <div id="welcome-card" class="glass-card">
+            <div class="mb-4 text-[10px] uppercase tracking-[0.5em] text-purple-400 font-bold">
+                <span class="status-dot"></span> System Online
+            </div>
+            <h1 class="text-4xl md:text-6xl font-light tracking-tighter mb-2">Mister Sekandar</h1>
+            <p class="text-white/40 text-sm tracking-widest uppercase">Official Website</p>
+            
+            <div id="click-prompt" class="mt-12 text-xs text-white/20 animate-bounce uppercase tracking-widest">
+                Click anywhere to initialize AI
+            </div>
+        </div>
+        
+        <div class="absolute bottom-10 text-[10px] text-white/20 tracking-[1em] uppercase">
+            Under Construction • 2026
+        </div>
     </div>
 
     <script type="module">
         import { Renderer, Program, Mesh, Triangle, Vec3 } from 'https://cdn.skypack.dev/ogl';
 
-        // --- CONFIG (From your Props) ---
-        const hue = 0;
-        const voiceSensitivity = 1.5;
-        const maxRotationSpeed = 1.2;
-        const maxHoverIntensity = 0.8;
-
-        const ctn = document.getElementById('orb-container');
-        const talkBtn = document.getElementById('talk-btn');
-        const statusText = document.getElementById('status');
-
-        let audioCtx, analyser, dataArray, source;
+        const hue = 270; // Set to a premium purple/blue
         let isAiTalking = false;
-
-        // --- SPEECH LOGIC ---
         const synth = window.speechSynthesis;
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        const recognition = new SpeechRecognition();
-        recognition.lang = 'en-US';
 
-        function speak(text, onEnd) {
-            const utter = new SpeechSynthesisUtterance(text);
-            isAiTalking = true;
-            utter.onend = () => {
-                isAiTalking = false;
-                if (onEnd) onEnd();
+        function speakWelcome() {
+            if (isAiTalking) return;
+            
+            const message = "Welcome to Mister Sekandar official website page. This page is under construction. Please come back soon later.";
+            const utter = new SpeechSynthesisUtterance(message);
+            
+            // Modern AI voice selection if available
+            const voices = synth.getVoices();
+            utter.voice = voices.find(v => v.name.includes('Google') || v.name.includes('Premium')) || voices[0];
+            utter.rate = 0.9; // Slightly slower for a more "sophisticated" feel
+            utter.pitch = 1.0;
+
+            utter.onstart = () => { 
+                isAiTalking = true; 
+                document.getElementById('click-prompt').innerText = "AI Greeting Active";
             };
+            utter.onend = () => { 
+                isAiTalking = false; 
+                document.getElementById('click-prompt').innerText = "System Standby";
+            };
+            
             synth.speak(utter);
         }
 
-        talkBtn.onclick = async () => {
-            if (!audioCtx) await initMic();
-            statusText.innerText = "AI Speaking...";
-            speak("Hello can you tell me your name", () => {
-                statusText.innerText = "Listening for name...";
-                recognition.start();
-            });
-        };
+        // Initialize on first click
+        window.addEventListener('click', () => {
+            speakWelcome();
+            document.getElementById('click-prompt').classList.remove('animate-bounce');
+        }, { once: false });
 
-        recognition.onresult = (event) => {
-            const result = event.results[0][0].transcript;
-            const name = result.toLowerCase().replace(/it's|my name is|i'm|i am/g, "").trim();
-            statusText.innerText = `Greeting ${name}...`;
-            speak(`hello ${name} how are you how can I assist you`);
-        };
-
-        // --- YOUR EXACT SHADERS ---
+        // --- ORB SHADER LOGIC (EXACTLY AS PROVIDED) ---
         const vert = `precision highp float; attribute vec2 position; attribute vec2 uv; varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position, 0.0, 1.0); }`;
         const frag = `
             precision highp float;
@@ -100,7 +113,6 @@
                 return dot(vec4(31.316), n);
             }
             vec4 extractAlpha(vec3 colorIn) { float a = max(max(colorIn.r, colorIn.g), colorIn.b); return vec4(colorIn.rgb / (a + 1e-5), a); }
-            
             const vec3 baseColor1 = vec3(0.611765, 0.262745, 0.996078);
             const vec3 baseColor2 = vec3(0.298039, 0.760784, 0.913725);
             const vec3 baseColor3 = vec3(0.062745, 0.078431, 0.600000);
@@ -109,7 +121,7 @@
                 vec3 color1 = adjustHue(baseColor1, hue), color2 = adjustHue(baseColor2, hue), color3 = adjustHue(baseColor3, hue);
                 float ang = atan(uv.y, uv.x), len = length(uv);
                 float n0 = snoise3(vec3(uv * 0.65, iTime * 0.5)) * 0.5 + 0.5;
-                float r0 = mix(mix(0.6, 1.0, 0.4), mix(0.6, 1.0, 0.6), n0);
+                float r0 = mix(0.6, 1.0, n0);
                 float d0 = distance(uv, (r0 / (len + 0.0001)) * uv);
                 float v0 = 1.0 / (1.0 + d0 * 10.0);
                 v0 *= smoothstep(r0 * 1.05, r0, len);
@@ -135,10 +147,9 @@
             }
         `;
 
-        // --- ORB RENDERER ---
         const renderer = new Renderer({ alpha: true, antialias: true, dpr: window.devicePixelRatio });
         const gl = renderer.gl;
-        ctn.appendChild(gl.canvas);
+        document.getElementById('orb-container').appendChild(gl.canvas);
 
         const program = new Program(gl, {
             vertex: vert, fragment: frag,
@@ -156,16 +167,6 @@
         window.onresize = resize;
         resize();
 
-        async function initMic() {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            audioCtx = new AudioContext();
-            analyser = audioCtx.createAnalyser();
-            source = audioCtx.createMediaStreamSource(stream);
-            analyser.fftSize = 512;
-            source.connect(analyser);
-            dataArray = new Uint8Array(analyser.frequencyBinCount);
-        }
-
         let lastTime = 0, currentRot = 0;
         function update(t) {
             requestAnimationFrame(update);
@@ -173,24 +174,16 @@
             lastTime = t;
             program.uniforms.iTime.value = t * 0.001;
 
-            let level = 0;
-            if (analyser && dataArray) {
-                analyser.getByteFrequencyData(dataArray);
-                let sum = 0;
-                for (let i = 0; i < dataArray.length; i++) {
-                    let v = dataArray[i] / 255;
-                    sum += v * v;
-                }
-                level = Math.sqrt(sum / dataArray.length) * voiceSensitivity * 3.0;
+            let level = 0.1; // Idle level
+            if (isAiTalking) {
+                // Breathing/talking animation
+                level = 0.4 + Math.sin(t * 0.01) * 0.3;
             }
 
-            // Make the orb dance if the AI is speaking, even if mic isn't active
-            if (isAiTalking) level = 0.5 + Math.sin(t * 0.01) * 0.3;
-
-            currentRot += dt * (0.3 + level * maxRotationSpeed);
+            currentRot += dt * (0.3 + level * 1.2);
             program.uniforms.rot.value = currentRot;
             program.uniforms.hover.value = Math.min(level * 2.0, 1.0);
-            program.uniforms.hoverIntensity.value = Math.min(level * maxHoverIntensity, maxHoverIntensity);
+            program.uniforms.hoverIntensity.value = level * 0.8;
 
             renderer.render({ scene: mesh });
         }
